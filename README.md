@@ -24,6 +24,7 @@ This repository contains the code and documentation for my Bachelor thesis proje
 ## Prerequisites
 
 - Python 3.x
+- Flask
 - OpenAI API key
 - Modern web browser with WebRTC support
 - Microphone access (optional, for voice input)
