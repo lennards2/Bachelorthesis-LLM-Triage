@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>LLM Triage</title>
+  <link href='https://fonts.googleapis.com/css?family=Open Sans' rel='stylesheet'>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+  <!-- ========================================== -->
+  <!-- ONBOARDING SECTION -->
+  <!-- Multi-step patient information  -->
+  <!-- ========================================== -->
+
+  <div id="onboarding">
+
+    <!-- STEP 1: Language Selection -->
+    <div class="view" id="language" style="display: block;">
+      <div id="language-selection">
+        <h1 id="welcome-title">Herzlich Willkommen!</h1>
+        <p id="language-prompt">Wählen Sie Ihre bevorzugte Sprache aus:</p>
+        <div id="language-buttons">
+          <img src="static/images/gb.png" alt="English" class="flag-icon" onclick="setLanguage('en')" />
+         <img src="static/images/de.png" alt="Deutsch" class="flag-icon" onclick="setLanguage('de')" />
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Introduction and Explanation -->
+    <div class="view" id="intro" style="display: none;">
+      <h1 id="welcome2" class="view-header">Herzlich Willkommen!</h1>
+      <h2 id="intro-subheader" class="view-subheader">Um Sie anzumelden, führen wir zunächst eine Ersteinschätzung durch.</h2>
+      <div id="intro-box">
+        <p class="intro-text" id="intro-text1">In den nächsten Minuten stellt Ihnen dieser Assistent ein paar einfache Fragen zu Ihren Beschwerden. Dies hilft uns, die Dringlichkeit besser einzuschätzen. Bitte beantworten Sie diese so gut Sie können.</p>
+        <ul class="intro-text" id="intro-list" style="padding-left: 20px;">
+          <li class="intro-text" id="intro-time" style="text-align: start;">Das dauert in der Regel etwa 3-5 Minuten.</li>
+          <li class="intro-text" id="intro-style" style="text-align: start;">Antworten Sie einfach in Ihren eigenen Worten.</li>
+          <li class="intro-text" id="intro-style2" style="text-align: start;">Sie müssen keine medizinischen Fachbegriffe kennen.</li>
+          <li class="intro-text" id="intro-cancle" style="text-align: start;">Sie können die Befragung jederzeit abbrechen.</li>
+        </ul>
+      <p class="intro-text" id="intro-start">Klicken Sie auf "Start" um zu beginnen.</p>
+      </div>
+      <button id="btn-start" class="btn" onclick="handleIntro()">Start</button>
+    </div>
+
+    <!-- STEP 3: Patient Information -->
+    <div class="view" id="about-the-patient" style="display: none;">
+      <div id="about-the-patient-box">
+        <h1 id="about-the-patient-header" class="view-header">Informationen zum Patienten</h1>
+        <h2 id="about-the-patient-sub" class="view-subheader">Um loszulegen, brauchen wir ein paar Angaben zum Patienten.</h2>
+      </div>
+
+      <!-- Sub-step: Who is the patient? -->
+      <!-- Determines if user is answering for themselves or someone else -->
+      <div class="question" id="u-the-patient" style="display: none;">
+        <p id="u-the-patient-prompt" >Sind Sie der Patient?</p>
+      </div>
+      <div class="btn-group" id="u-the-patient-btns" style="display: none;">
+        <button id="btn-yes" class="btn" onclick="setPatient('selbst')">Ja</button>
+        <button id="btn-no" class="btn" onclick="setPatient('andere')">Nein</button>
+      </div>
+
+      <!-- Sub-step: Gender selection -->
+      <div class="question" id="gender" style="display: none;">
+        <p id="gender-prompt" >Was beschreibt Sie am besten?</p>
+      </div>
+      <div class="btn-group" id="gender-btn" style="display: none; ">
+        <button id="btn-woman" class="btn" onclick="setGender('woman')">Frau</button>
+        <button id="btn-man" class="btn" onclick="setGender('man')">Mann</button>
+        <button id="btn-other" class="btn" onclick="setGender('other')">Divers</button>
+      </div> 
+
+      <!-- Sub-step: Age group selection -->
+      <div class="question" id="age" style="display: none;">
+        <p id="age-prompt">Wie alt sind Sie?</p>
+      </div>
+      <div class="btn-group" id="age-input" style="display: none;">
+        <select id="age-select" name="altersgruppe">
+          <option value="1-4-woche">1.-4. Woche</option>
+          <option value="5-8-woche">5.-8. Woche</option>
+          <option value="3-12-monat">3.-12. Monat</option>
+          <option value="1-3-jahrig">1-3-jährig</option>
+          <option value="4-8-jahrig">4-8-jährig</option>
+          <option value="9-13-jahrig">9-13-jährig</option>
+          <option value="14-49-jahrig">14-49-jährig</option>
+          <option value="50-65-jahrig">50-65-jährig</option>
+          <option value="66-80-jahrig">66-80-jährig</option>
+          <option value="aelter-als-80-jahrig">Älter als 80-jährig</option>
+        </select>
+      </div>
+
+      <button id="btn-next" class="btn" style="display: none;" onclick="setAge()">Weiter</button>
+    </div>
+
+    <!-- STEP 4: Input Method Selection -->
+    <!-- Allows users to choose between text and voice input -->
+    <div class="view" id="audio" style="display: none;">
+      <div class="question" id="audio-q">
+        <h1 id="audio-prompt" class="view-header">Möchten Sie Spracheingabe verwenden?</h1>
+        <h2 id="audio-subprompt" class="view-subheader">Sie können sich später noch umentscheiden.</h2>
+      </div>
+      <div class="btn-group" id="audio-btns">
+        <button id="btn-audio-yes" class="btn" onclick="setAudioSettings(true)">Ja</button>
+        <button id="btn-audio-no" class="btn" onclick="setAudioSettings(false)">Nein</button>
+      </div>
+    </div>
+    
+
+  </div>
+
+  <!-- ========================================== -->
+  <!-- CONVERSATION SECTION -->
+  <!-- Main triage interaction area -->
+  <!-- ========================================== -->
+  <div id="conversation">
+
+    <!-- Assistant message container with gradient border -->
+    <!-- Houses the main conversation content and later results -->
+    <div id="assistant-message" class="gradient-box">
+      <div id="assistant-message-text" style="display: block;">
+        <p id="assistant-message-text">Hallo! Ich bin Ihr virtueller Gesundheitsassistent. Wie kann ich Ihnen helfen?</p>
+      </div>
+
+      <div class="loader" id="loader-message" style="display: none;"></div>
+      <div class="loader" id="loader-show-results" style="display: none;"></div>
+
+      <!-- RESULTS DISPLAY -->
+      <!-- Shows triage category and reasoning after assessment -->
+      <div id="results" style="display: none;">
+        <h2 id="results-header" >Ergebnis unserer Ersteinschätzung:</h2>
+        
+        <p id="results-wait-please" class="results-next-steps-text">Bitte nehmen Sie im Wartebereich Platz und warten, bis Sie aufgerufen werden.</p>
+      
+        <div id="results-content">
+
+          <p id="results-text-urgency" class="results-p">Dringlichkeit:</p>
+          <div id="results-category" class="category-box">
+            <p id="results-category-text" class="results-p">...</p>
+          </div>
+
+          
+        </div>
+
+        <hr id="break" style="width: 400px; border-color: #dee5ff;"/>
+
+        <p id="results-next-steps" class="results-next-steps-text">Wir kamen aus folgenden Gründen zu diesem Ergebnis:</p>
+
+        <!-- Container with LLM-generated reasons for classification -->
+        <div id="results-reasons-container" >
+          <div class="loader" id="loader-reasons"></div>
+        </div>
+
+        
+      </div>
+
+      </div>
+    </div>
+
+    <!-- Footer section -->
+    <div id="footer">
+      <button id="cancel" class="btn" onclick="location.reload()">Abbrechen</button>
+
+      <!-- Text input container -->
+      <div id="message-box">
+        <input type="text" id="message" placeholder="Beschreiben Sie Ihre Symptome.." />
+        <img src="static/images/send.svg" alt="Senden" class="flag-icon"  id="send" onclick="sendText()"/>
+      </div>
+
+      <!-- Voice input controls -->
+      <div id="microphone">
+        <!-- Hint for users -->
+        <div id="hint" style="display: block;">
+          <p id="hint-text">Klicken Sie auf das Mikrofon für Spracheingabe.</p>
+        </div>
+        <!-- Live transcript display during voice input -->
+        <div id="mic-transcript" style="display: none;">
+          <p id="mic-transcript-text" style="display: none;">...</p>
+          <p id="mic-transcript-prompt" >Sie können jetzt sprechen</p>
+          <div class="loader-small" id="loader-mic-transcript"></div>
+        </div>
+        <!-- Voice control icons -->
+        <img src="static/images/mic.svg" alt="Microphone" class="flag-icon" id="mic" onclick="toggleMic()" />
+        <img src="static/images/mic-off.svg" alt="Microphone" class="flag-icon" id="mic-off" style="display: none;" onclick="toggleMic()" />
+        <img src="static/images/sound-off.svg" alt="Sound off" class="flag-icon" id="sound-off" style="display: none;" onclick="toggleAudio()" />
+        <img src="static/images/sound.svg" alt="Sound on" class="flag-icon" id="sound-on" onclick="toggleAudio()" />
+      </div>
+    
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT APPLICATION LOGIC -->
+  <!-- ========================================== -->
+  <script>
+    const chat = document.getElementById('chat');
+    const messageInput = document.getElementById('message');
+    const sendButton = document.getElementById('send'); //Change to inline button in html part
+    const loaderMessage = document.getElementById('loader-message');
+    const messagesDiv = document.getElementById("assistant-message");
+
+    let currentLanguage = 'de';
+    let currentPatient = 'self';
+    let currentPatientGender = 'other';
+    let currentPatientAge = 'other';
+    let ageWarningText = 'Bitte geben Sie Ihr Alter an.'; // Default text for age warning
+    
+    let dc;                     // WebRTC Data channel 
+    let micOn = false;
+    let micAvailable = false;
+    let audioOn = true;
+    let micTrack;
+    let pc;                     // WebRTC Peer Connection  
+    const audioEl = document.createElement("audio");
+
+    let sysPrompt = `You are a compassionate triage nurse assistant. Your role is to help users describe their symptoms and assess the level of care they need. Follow these guidelines:
+      • Ask one clear question per message to gather details about the user's symptoms.
+      • Be friendly, empathetic, and professional in every response.
+      • Never repeat a question you've already asked.
+      • Base each new question on the user's previous responses.
+      • Once you have gathered enough information, provide a final assessment by categorizing the user's condition into one of these five Groups by calling the function 'show_result':
+         1. RED Immediate attention required (0 minutes wait)
+         2. ORANGE Very urgent (10 minutes wait)
+         3. YELLOW Urgent (30 minutes wait)
+         4. GREEN Normal urgency (90 minutes wait)
+         5. BLUE Not urgent (120 minutes wait)
+      • Do not add any extra commentary when you have decided to call the function 'show_results'.
+      • Keep in mind that there are limited resources at the emergency room.
+      • After calling the function, you will be asked to name the reasons for the categorization. Follow the instructions carefully and keep the formatting in mind.
+      Always ensure that your questions are concise and directly aimed at understanding the user's current symptoms.`;
+
+
+    // Sets the application language and updates all UI text
+    function setLanguage(language) {
+      currentLanguage = language;
+      const ageSelect = document.getElementById('age-select');
+      if (language === 'en') {
+        document.getElementById('welcome-title').innerText = 'Welcome!';
+        document.getElementById('welcome2').innerText = 'Welcome!';
+        document.getElementById('language-prompt').innerText = 'Choose your preferred language';
+        document.getElementById('intro-subheader').innerText = 'To check you in, we will do an initial assessment.';
+        document.getElementById('intro-text1').innerText = 'In the next few minutes, this assistant will ask you a few simple questions about your symptoms. This will help us to better assess the urgency. Please answer them as best as you can.';
+        document.getElementById('intro-time').innerText = 'It usually takes about 3-5 minutes.';
+        document.getElementById('intro-style').innerText = 'Please answer in your own words. You do not need to know any medical terms.';
+        document.getElementById('intro-style2').innerText = 'You do not need to know any medical terms.';
+        document.getElementById('intro-cancle').innerText = 'You can stop at any time.';
+        document.getElementById('intro-start').innerText = 'When you’re ready, press Start to begin.';
+        document.getElementById('about-the-patient-header').innerText = 'About the Patient';
+        document.getElementById('about-the-patient-sub').innerText = 'To get started, we need a few details.';
+        document.getElementById('u-the-patient-prompt').innerText = 'Are you the Patient?';
+        document.getElementById('gender-prompt').innerText = 'What describes you best?';
+        document.getElementById('age-prompt').innerText = 'How old are you?';
+        document.getElementById('btn-yes').innerText = 'Yes';
+        document.getElementById('btn-no').innerText = 'No';
+        document.getElementById('btn-next').innerText = 'Next';
+        document.getElementById('btn-man').innerText = 'Man';
+        document.getElementById('btn-woman').innerText = 'Woman';
+        document.getElementById('btn-other').innerText = 'Other';
+        ageWarningText = 'Please enter your date of birth.'; 
+        document.getElementById('results-header').innerText = 'Result of our initial assessment:';
+        document.getElementById('results-wait-please').innerText = 'Please take a seat in the waiting area and wait until you are called.';
+
+        document.getElementById('results-next-steps').innerText = 'We came to this result for the following reasons:';
+        document.getElementById('cancel').innerText = 'Cancel';
+        document.getElementById('message').placeholder = 'Describe your symptoms..';
+        document.getElementById('hint-text').innerText = 'Click the microphone for voice input.';
+        document.getElementById('audio-prompt').innerText = 'Do you want to use voice input?';
+        document.getElementById('audio-subprompt').innerText = 'You can change your mind later.';
+        // Set age select options for English
+        ageSelect.innerHTML = `
+          <option value="1-4-woche">1st-4th week</option>
+          <option value="5-8-woche">5th-8th week</option>
+          <option value="3-12-monat">3rd-12th month</option>
+          <option value="1-3-jahrig">1-3 years old</option>
+          <option value="4-8-jahrig">4-8 years old</option>
+          <option value="9-13-jahrig">9-13 years old</option>
+          <option value="14-49-jahrig">14-49 years old</option>
+          <option value="50-65-jahrig">50-65 years old</option>
+          <option value="66-80-jahrig">66-80 years old</option>
+          <option value="aelter-als-80-jahrig">Older than 80 years</option>
+        `;
+        // Set audio yes/no buttons for English
+        document.getElementById('btn-audio-yes').innerText = 'Yes';
+        document.getElementById('btn-audio-no').innerText = 'No';
+      } else {
+        document.getElementById('welcome-title').innerText = 'Herzlich Willkommen!';
+        document.getElementById('welcome2').innerText = 'Herzlich Willkommen!';
+        document.getElementById('language-prompt').innerText = 'Wählen Sie Ihre bevorzugte Sprache aus:';
+        document.getElementById('intro-subheader').innerText = 'Um Sie anzumelden, führen wir zunächst eine Ersteinschätzung durch.';
+        document.getElementById('intro-text1').innerText = 'In den nächsten Minuten stellt Ihnen dieser Assistent ein paar einfache Fragen zu Ihren Beschwerden. Bitte beantworten Sie diese so gut Sie können. Dies hilft uns, die Dringlichkeit besser einzuschätzen.';
+        document.getElementById('intro-time').innerText = 'Das dauert in der Regel etwa 3-5 Minuten.';
+        document.getElementById('intro-cancle').innerText = 'Sie können die Befragung jederzeit abbrechen.';
+        document.getElementById('intro-style').innerText = 'Antworten Sie bitte in Ihren eigenen Worten.';
+        document.getElementById('intro-style2').innerText = 'Sie müssen keine medizinischen Fachbegriffe kennen.';
+        document.getElementById('intro-start').innerText = 'Klicken Sie auf "Start" um zu beginnen.';
+        //Ab hier auch patient not patient
+        document.getElementById('about-the-patient-header').innerText = 'Informationen zum Patienten';
+        document.getElementById('about-the-patient-sub').innerText = 'Um loszulegen, brauchen wir ein paar Angaben zum Patienten.';
+        document.getElementById('u-the-patient-prompt').innerText = 'Sind Sie der Patient?';
+        document.getElementById('gender-prompt').innerText = 'Was beschreibt Sie am besten?';
+        document.getElementById('age-prompt').innerText = 'Wann wurden Sie geboren?';
+        document.getElementById('btn-yes').innerText = 'Ja';
+        document.getElementById('btn-no').innerText = 'Nein';
+        document.getElementById('btn-next').innerText = 'Weiter';
+        document.getElementById('btn-man').innerText = 'Mann';
+        document.getElementById('btn-woman').innerText = 'Frau';
+        document.getElementById('btn-other').innerText = 'Divers';
+        ageWarningText = 'Bitte geben Sie Ihr Alter an.';
+        document.getElementById('results-header').innerText = 'Ergebnis unserer Ersteinschätzung:';
+        document.getElementById('results-wait-please').innerText = 'Bitte nehmen Sie im Wartebereich Platz und warten, bis Sie aufgerufen werden.';
+        document.getElementById('results-next-steps').innerText = 'Wir kamen aus folgenden Gründen zu diesem Ergebnis:';
+        document.getElementById('cancel').innerText = 'Abbrechen';
+        document.getElementById('message').placeholder = 'Beschreiben Sie Ihre Symptome..';
+        document.getElementById('hint-text').innerText = 'Klicken Sie auf das Mikrofon für Spracheingabe.';
+        document.getElementById('audio-prompt').innerText = 'Möchten Sie Spracheingabe verwenden?';
+        document.getElementById('audio-subprompt').innerText = 'Sie können sich später noch umentscheiden.';
+        // Set age select options for German
+        ageSelect.innerHTML = `
+          <option value="1-4-woche">1.-4. Woche</option>
+          <option value="5-8-woche">5.-8. Woche</option>
+          <option value="3-12-monat">3.-12. Monat</option>
+          <option value="1-3-jahrig">1-3-jährig</option>
+          <option value="4-8-jahrig">4-8-jährig</option>
+          <option value="9-13-jahrig">9-13-jährig</option>
+          <option value="14-49-jahrig">14-49-jährig</option>
+          <option value="50-65-jahrig">50-65-jährig</option>
+          <option value="66-80-jahrig">66-80-jährig</option>
+          <option value="aelter-als-80-jahrig">Älter als 80-jährig</option>
+        `;
+        document.getElementById('btn-audio-yes').innerText = 'Ja';
+        document.getElementById('btn-audio-no').innerText = 'Nein';
+      }
+
+      document.getElementById('language').style.display = 'none';
+      document.getElementById('intro').style.display = 'block';
+    }
+
+    function handleIntro() { // Handle the start button click in the intro section
+      document.getElementById('intro').style.display = 'none';
+      document.getElementById('about-the-patient').style.display = 'grid';
+      document.getElementById('u-the-patient').style.display = 'flex';
+      document.getElementById('u-the-patient-btns').style.display = 'flex';
+    }
+
+    function setPatient(patient) { // Change text based on patient selection
+      currentPatient = patient;
+      if (currentLanguage === 'de' && currentPatient === 'selbst') {
+        document.getElementById('gender-prompt').innerText = 'Was beschreibt Sie am besten?';
+        document.getElementById('age-prompt').innerText = 'Wie alt sind Sie?';
+        //Change colors of the buttons to match the selected
+        document.getElementById('btn-yes').style.backgroundColor = '#5C6790';
+        document.getElementById('btn-no').style.backgroundColor = '#c2c6d5';
+      } else if (currentLanguage === 'de' && currentPatient === 'andere') {
+        document.getElementById('gender-prompt').innerText = 'Was beschreibt den Patienten am besten?';
+        document.getElementById('age-prompt').innerText = 'Wie alt ist der Patient?';
+        //Change colors of the buttons to match the selected
+        document.getElementById('btn-yes').style.backgroundColor = '#c2c6d5';
+        document.getElementById('btn-no').style.backgroundColor = '#5C6790';
+      } else if (currentLanguage === 'en' && currentPatient === 'selbst') {
+        document.getElementById('gender-prompt').innerText = 'What describes you best?';
+        document.getElementById('age-prompt').innerText = 'How old are you?';
+        //Change colors of the buttons to match the selected
+        document.getElementById('btn-yes').style.backgroundColor = '#5C6790';
+        document.getElementById('btn-no').style.backgroundColor = '#c2c6d5';
+      } else if (currentLanguage === 'en' && currentPatient === 'andere') {
+        document.getElementById('gender-prompt').innerText = 'What describes the Patient best?';
+        document.getElementById('age-prompt').innerText = 'How old is the Patient?';
+        //Change colors of the buttons to match the selected
+        document.getElementById('btn-yes').style.backgroundColor = '#c2c6d5';
+        document.getElementById('btn-no').style.backgroundColor = '#5C6790';
+      }
+
+      document.getElementById('gender').style.display = 'flex';
+      document.getElementById('gender-btn').style.display = 'flex';
+    }
+
+    // Sets patient gender and updates button styling
+    function setGender(value) {
+      currentPatientGender = value;
+      if (value === 'woman') { 
+        document.getElementById('btn-woman').style.backgroundColor = '#5C6790';  // Change button color to indicate selection
+        document.getElementById('btn-man').style.backgroundColor = '#c2c6d5';
+        document.getElementById('btn-other').style.backgroundColor = '#c2c6d5';
+      }
+      else if (value === 'man') {
+        document.getElementById('btn-woman').style.backgroundColor = '#c2c6d5';
+        document.getElementById('btn-man').style.backgroundColor = '#5C6790';
+        document.getElementById('btn-other').style.backgroundColor = '#c2c6d5';
+      }
+      else if (value === 'other') {
+        document.getElementById('btn-woman').style.backgroundColor = '#c2c6d5';
+        document.getElementById('btn-man').style.backgroundColor = '#c2c6d5';
+        document.getElementById('btn-other').style.backgroundColor = '#5C6790';
+      }
+
+      document.getElementById('age').style.display = 'flex';
+      document.getElementById('btn-next').style.display = 'flex';
+      document.getElementById('age-input').style.display = 'flex';
+    }
+
+    // Sets patient age and updates sysPrompt with patient information
+    function setAge() {
+      const input = document.getElementById('age-select').value;
+      //if no input, return
+      if (!input) {
+        alert(ageWarningText);
+        return;
+      }
+      currentPatientAge = input;
+
+      //Update the sysPrompt with the patient's information
+      sysPrompt = sysPrompt + "The selected language is:"+ currentLanguage +"The patient is " + currentPatientAge + " years old. The patient is a " + currentPatientGender + "."+ "The person answering the questions is:" + currentPatient + "."+"(Selbst for the patient, Andere for someone else).";
+      
+      //Hide the current view and show question about audio settings
+      document.getElementById('age').style.display = 'none';
+      document.getElementById('about-the-patient').style.display = 'none';
+      document.getElementById('audio').style.display = 'flex';
+      document.getElementById('audio-q').style.display = 'flex';
+      document.getElementById('audio-btns').style.display = 'flex';
+    }
+
+    // Sets audio preferences and initialize the conversation interface
+    function setAudioSettings(bool) {
+      micOn = bool;
+      document.getElementById('onboarding').style.display = 'none';
+      document.getElementById('conversation').style.display = 'flex';
+      document.getElementById('conversation').style.borderRadius = '0px';
+      document.getElementById('footer').style.display = 'inline-flex';
+      window.setTimeout(hideHint, 8000);                // Hide hint after 8 seconds
+      document.body.style.padding = '0';
+      init(); // Initialize WebRTC connection
+    }
+
+
+    function hideHint() {
+      //Fade out the hint
+      const hint = document.getElementById('hint');
+      hint.style.transition = 'opacity 0.5s ease-out';
+      hint.style.opacity = '0'; // Fade out the hint  
+    }
+
+
+    /* ==========================================
+     * WEBRTC AND AUDIO MANAGEMENT
+     * Handle real-time communication with OpenAI
+     * ========================================== */
+
+
+    // Create a dummy audio track for when the user denies microphone access or microphone is not available
+    // This prevents WebRTC connection issues when no real microphone is available
+    function createSilentAudioTrack() {
+      const ctx = new AudioContext();
+      const oscillator = ctx.createOscillator();
+      const dst = ctx.createMediaStreamDestination();
+
+      oscillator.connect(dst);
+      oscillator.start();
+      oscillator.stop(ctx.currentTime + 0.01); // 10ms pulse
+
+      const track = dst.stream.getAudioTracks()[0];
+      track.enabled = false; // Stay silent
+      return track;
+    }
+
+    /**
+     * Initializes WebRTC connection with OpenAI
+     * Sets up audio streams, data channel, and configures the LLM
+     */
+    async function init() {
+      // Fetch ephemeral key
+      const tokenResponse = await fetch("/session");
+      const data = await tokenResponse.json();
+      const EPHEMERAL_KEY = data.client_secret.value;
+
+      //Setup WebRTC connection
+      const pc = new RTCPeerConnection();
+
+      // Setup audio
+      audioEl.autoplay = true;  // Autoplay audio
+      pc.ontrack = e => {
+        audioEl.srcObject = e.streams[0]; // Set the audio source to the received stream
+      };
+
+
+      // Request microphone access
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        micTrack = stream.getAudioTracks()[0];
+        micTrack.enabled = false;
+        micAvailable = true;
+      } catch (err) {
+        console.warn("Microphone access denied, using dummy audio track.");
+        micTrack = createSilentAudioTrack();
+        //Turn mic button off
+        micAvailable = false;
+        document.getElementById('mic').style.opacity = '0.5';	// Gray out button
+      }
+      pc.addTrack(micTrack);
+
+      
+
+      // Data channel for text
+      dc = pc.createDataChannel("oai-events"); // Create data channel for text messages
+      dc.onmessage = (event) => {handleMessage(event)}; // Handle incoming messages
+      
+      // Create SDP offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // Exchange SDP with OpenAI Realtime API
+      const sdpResponse = await fetch(
+        "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
+        {
+          method: "POST",
+          body: offer.sdp,
+          headers: {
+            Authorization: `Bearer ${EPHEMERAL_KEY}`,
+            "Content-Type": "application/sdp",
+          },
+        }
+      );
+      const answer = { type: "answer", sdp: await sdpResponse.text() };
+      await pc.setRemoteDescription(answer);
+
+      // Send system prompt and configuration
+      dc.addEventListener("open", () => {
+        if (dc.readyState === "open") {
+          sendEvent(
+        { "event_id":"event_123",
+          "type":"session.update",
+          "session":{
+          "instructions":"" + sysPrompt,
+          "voice":"sage",
+          "input_audio_transcription":{
+            "model":"whisper-1"
+          }
+          }
+        }
+          );
+        }
+      });
+      // Configure function calling for triage classification
+      dc.addEventListener("open", () => {
+        if (dc.readyState === "open") {
+          sendEvent(
+        { "type":"session.update",
+            "session":{
+                "tools":[
+                  {
+                      "type":"function",
+                      "name":"show_result",
+                      "description":"When you have decided on a Manchester Triage Category call this function with the category you selected.",
+                      "parameters":{
+                        "type":"object",
+                        "properties":{
+                            "MSTCategory":{
+                              "type":"string",
+                              "description":"The Manchester Trage Category",
+                              "enum":[
+                                  "RED Immediate attention required (0 minutes wait)",
+                                  "ORANGE Very urgent (10 minutes wait)",
+                                  "YELLOW Urgent (30 minutes wait)",
+                                  "GREEN Normal urgency (90 minutes wait)",
+                                  "BLUE Not urgent (120 minutes wait)"
+                              ]
+                            }
+                        },
+                        "required":[
+                            "MSTCategory"
+                        ]
+                      }
+                  }
+                ],
+                "tool_choice":"auto" //Let the model decide when to call the function
+            }
+          }
+          );
+        }
+      });
+
+      if(micOn) {
+        micTrack.enabled = true; // Enable the mic track
+        micOn = true;
+        const hint = document.getElementById('hint');
+        hint.style.display = 'none'; // Hide the hint when microphone is clicked
+        document.getElementById('mic-off').style.display = 'block';
+        document.getElementById('mic').style.display = 'none';
+        document.getElementById('mic-transcript').style.display = 'flex'; // Show the transcript
+        document.getElementById('message').style.display = 'none'; // Hide the text input field
+        console.log("Turn Mic On");
+        audioOn = true;
+        document.getElementById('sound-on').style.display = 'block'; 
+        document.getElementById('sound-off').style.display = 'none';
+        audioEl.muted = false;
+        console.log("Turn Audio On");
+      } else {
+        micTrack.enabled = false; // Disable the mic track
+        micOn = false;
+        document.getElementById('mic-off').style.display = 'none'; 
+        document.getElementById('mic').style.display = 'block'; 
+        document.getElementById('mic-transcript').style.display = 'none'; // Hide the transcript
+        document.getElementById('message').style.display = 'block'; // Show the text input field
+        document.getElementById('message').focus(); // Refocus input field
+        console.log("Turn Mic Off");
+        audioOn = false;
+        document.getElementById('sound-on').style.display = 'none'; //Check if this is correct
+        document.getElementById('sound-off').style.display = 'block';
+        audioEl.muted = true;
+        console.log("Turn Audio Off");
+      }
+    }
+    
+
+
+    function toggleMic() { 
+      if (!micAvailable) {
+        if(currentLanguage === 'de') {
+          alert("Das Mikrofon ist nicht verfügbar.");
+        } else {
+          alert("Microphone access is not available.");
+        }
+        return;
+      }
+      if (micOn) {
+        micTrack.enabled = false; // Disable the mic track
+        micOn = false;
+        document.getElementById('mic-off').style.display = 'none'; 
+        document.getElementById('mic').style.display = 'block'; 
+        document.getElementById('mic-transcript').style.display = 'none'; // Hide the transcript
+        document.getElementById('message').style.display = 'block'; // Show the text input field
+        document.getElementById('message').focus(); // Refocus input field
+        console.log("Turn Mic Off");
+      } else {
+        micTrack.enabled = true; // Enable the mic track
+        micOn = true;
+        const hint = document.getElementById('hint');
+        hint.style.display = 'none'; // Hide the hint when microphone is clicked
+        document.getElementById('mic-off').style.display = 'block';
+        document.getElementById('mic').style.display = 'none';
+        document.getElementById('mic-transcript').style.display = 'flex'; // Show the transcript
+        document.getElementById('message').style.display = 'none'; // Hide the text input field
+        console.log("Turn Mic On");
+      }
+    }
+
+    function toggleAudio() {
+      const soundOnIcon = document.getElementById('sound-on');
+      const soundOffIcon = document.getElementById('sound-off');
+
+      if (audioOn) {
+        audioOn = false;
+        soundOnIcon.style.display = 'none';     // Hide the sound on icon
+        soundOffIcon.style.display = 'block';   // Show the sound off icon
+        audioEl.muted = true;
+        console.log("Turn Audio Off");
+      } else {
+        audioOn = true;
+        soundOnIcon.style.display = 'block';    // Show the sound on icon
+        soundOffIcon.style.display = 'none';    // Hide the sound off icon
+        audioEl.muted = false;
+        console.log("Turn Audio On");
+      }
+    }
+
+    // Send event over the data channel
+    function sendEvent(event) { 
+      event.event_id = event.event_id || `evt_${Date.now()}`;
+      dc.send(JSON.stringify(event));
+    }
+
+
+    // Enable Enter key to send text messages
+    document.getElementById('message').addEventListener('keydown', function (event) { // Handle Enter key press in the message input field
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      sendText();
+    }
+    });
+
+    // Send text message
+    function sendText() {
+      const text = document.getElementById('message').value;
+      if (!text) return;
+      //appendMessage('You', text);
+      sendEvent({ type: 'conversation.item.create', item: { type: 'message', role: 'user', content: [{ type: 'input_text', text }] } }); // Create item & Send text message
+      sendEvent({ type: 'response.create', response: { modalities: ['text','audio'] } });   // Request response
+      messageInput.value = ''; // Clear input field
+      document.getElementById('assistant-message-text').style.display = 'none'; // Show the assistant message
+      loaderMessage.style.display = 'block'; 
+      messageInput.focus(); // Refocus input field
+    };
+
+    // Helper to show messages
+    function appendMessage(msg) {
+      document.getElementById('assistant-message-text').textContent = msg;
+      loaderMessage.style.display = 'none'; // Hide the loader
+      document.getElementById('assistant-message-text').style.display = 'block'; // Show the assistant message
+    }
+    
+
+    /**
+     * Main message handler for WebRTC data channel events
+     * Processes different types of LLM responses and updates UI accordingly
+     */
+    function handleMessage(event) {
+      const data = JSON.parse(event.data);
+      console.log(data);
+
+      if (data.type === 'response.done' && data.response.metadata?.topic === "classification") {
+        // Handle triage reasons response (after classification)
+        const outputItems = data.response.output;
+        outputItems.forEach(item => {
+            item.content.forEach(contentBlock => {
+              if (contentBlock.type === 'text') {
+                splitReasons(contentBlock.text);
+              } 
+            });
+          
+        });
+
+      } else if (data.type === 'response.done'){
+        // Handle normal conversation responses
+        const outputItems = data.response.output;
+        
+        outputItems.forEach(item => {
+          if(item.type === 'function_call'){
+            // Handle function call directly
+            console.log("Function call response");
+            try {
+              const args = JSON.parse(item.arguments);
+              const category = args.MSTCategory;
+              if (item.name === 'show_result') {
+                showResult(category);   // Display triage results
+              }
+            } catch (err) {
+              console.error("Failed to parse function call arguments:", err);
+            }
+          }
+          else{
+            // Normal conversational response
+            console.log("Normal response");
+            item.content.forEach(contentBlock => {
+              if (contentBlock.type === 'text') {
+                console.log("Text response");
+                appendMessage( contentBlock.text);
+              } else if (contentBlock.type === 'audio') {
+                appendMessage( contentBlock.transcript);
+                console.log("Transcript response");
+              }
+            });
+          }
+        });
+      } 
+      else if (data.type === 'conversation.item.input_audio_transcription.completed') {
+        // Display live transcript of user's speech
+        const transcript = data.transcript;
+        const micTranscriptEl = document.getElementById('mic-transcript-text');
+        if (micTranscriptEl) {
+          micTranscriptEl.style.display = 'block'; // Show the transcript element
+          document.getElementById('loader-mic-transcript').style.display = 'none'; // Hide the loader
+          document.getElementById('mic-transcript-prompt').style.display = 'none'; 
+          micTranscriptEl.textContent = transcript;
+        }
+      } 
+      else if (data.type === 'input_audio_buffer.speech_started') {
+        const micTranscriptEl = document.getElementById('mic-transcript-text');
+        if (micTranscriptEl) {
+          micTranscriptEl.style.display = 'none'; // Hide the transcript element
+          document.getElementById('loader-mic-transcript').style.display = 'flex'; // Show the loader
+        }
+      }
+      else{
+        console.log("Unknown message type:", data);
+      }
+    }
+
+    /* ==========================================
+     * RESULTS DISPLAY AND PROCESSING
+     * Handle triage classification reasons
+     * ========================================== */
+    function showResult(args){
+      micTrack.enabled = false; // Disable the mic track
+      micOn = false;
+      audioOn = false;  
+      audioEl.muted = true;   // Disable audio
+
+      // Show loading state while AI generates reasoning
+      document.getElementById('assistant-message-text').style.display = 'none';    
+      document.getElementById('loader-show-results').style.display = 'block';  // Show loader while LLM processes the request
+      document.getElementById('assistant-message-text').style.display = 'none';
+      document.getElementById('message-box').style.display = 'none';
+      document.getElementById('microphone').style.display = 'none';
+
+      // Request reasons for the triage decision
+      const prompt = `The Manchester Triage Category is: ${args}. Please provide 2-5 reasons for this classification. This can include the symptoms, their severity, and any other relevant information that led to this classification. The reasons should be concise and clear. The reasons should be in the same language as the user. Also, the reasons should be in the form of a list. Each reason should be at most a few words long. Each Reason is seperated by '!'. Here is an example: "Headache! Pain 6/10! dizziness! History of Head injury " It is extremely important that you follow the formatting rules and only send me the list of reasons, nothing else. Do not add any extra commentary or explanations. Your output should be a single string with the reasons separated by '!'. Answer in the language of the user. DO NOT use any other punctuation or formatting like "" or {}.`;
+      const event = {
+        type: "response.create",
+        response: {
+          conversation: "none",
+          metadata: { topic: "classification" },
+          
+          // Set any other available response fields
+          modalities: [ "text" ],
+          instructions: prompt,
+        },
+      };
+
+      sendEvent(event); // Send the event to the server
+
+      console.log("Classification event sent:", event);
+
+      document.getElementById('loader-message').style.display = 'none'; 
+
+      // Update UI with color-coded triage category
+      if( args === "RED Immediate attention required (0 minutes wait)") {
+        if(currentLanguage === 'de') {
+          document.getElementById('results-category-text').innerText = 'Rot';
+        } else {
+          document.getElementById('results-category-text').innerText = 'Red';
+        }
+        document.getElementById('results-category').style.backgroundColor = '#B23A48';
+        document.getElementById('results-category-text').style.color = 'white';
+
+      } else if (args === "ORANGE Very urgent (10 minutes wait)") {
+        if(currentLanguage === 'de') {
+          document.getElementById('results-category-text').innerText = 'Orange';
+        } else {
+          document.getElementById('results-category-text').innerText = 'Orange';
+        }
+        document.getElementById('results-category').style.backgroundColor = '#DF984A';
+
+      } else if (args === "YELLOW Urgent (30 minutes wait)") {
+        if(currentLanguage === 'de') {
+          document.getElementById('results-category-text').innerText = 'Gelb';
+        } else {
+          document.getElementById('results-category-text').innerText = 'Yellow';
+        }
+        document.getElementById('results-category').style.backgroundColor = '#F3F398';
+
+      } else if (args === "GREEN Normal urgency (90 minutes wait)") {
+        if(currentLanguage === 'de') {
+          document.getElementById('results-category-text').innerText = 'Grün';
+        } else {
+          document.getElementById('results-category-text').innerText = 'Green';
+        }
+        document.getElementById('results-category').style.backgroundColor = '#A2E0A3';
+
+      } else if (args === "BLUE Not urgent (120 minutes wait)") {
+        if(currentLanguage === 'de') {
+          document.getElementById('results-category-text').innerText = 'Blau';
+        } else {
+          document.getElementById('results-category-text').innerText = 'Blue';
+        }
+        //Change Textcolor to white
+        document.getElementById('results-category-text').style.color = 'white';
+        document.getElementById('results-category').style.backgroundColor = '#355070';
+
+      } 
+      // Show results section
+      document.getElementById('loader-show-results').style.display = 'none'; 
+      document.getElementById('results').style.display = 'flex';
+
+      //Change text from "cancel" to "finish"
+      document.getElementById('cancel').innerText = 'Fertig';
+    }
+
+    /**
+     * Parses AI-generated reasoning text and displays as individual reason cards
+     * Handles string cleanup and splitting on '!' delimiter
+     */
+    function splitReasons(reasons) {
+      if (reasons.startsWith('{"')) {
+        reasons = reasons.substring(2); // Remove the first two characters '{"'
+      }
+      if (reasons.startsWith('{')) {
+        reasons = reasons.substring(1); // Remove the first characters
+      }
+      if (reasons.startsWith('"')) {
+        reasons = reasons.substring(1); // Remove the first characters 
+      }
+
+      if (reasons.endsWith('"}')) {
+        reasons = reasons.substring(0, reasons.length - 2); // Remove the last two character '"}'
+      }
+      if (reasons.endsWith('}')) {
+        reasons = reasons.substring(0, reasons.length - 1); // Remove the last character
+      }
+      if (reasons.endsWith('"')) {
+        reasons = reasons.substring(0, reasons.length - 1); // Remove the last character
+      }
+      // Split reasons and create UI elements
+      const reasonsArray = reasons.split('!');
+      const resultsReasonsContainer = document.getElementById('results-reasons-container');
+      resultsReasonsContainer.innerHTML = ''; // Clear previous reasons
+      document.getElementById('loader-message').style.display = 'none'; // Hide the loader
+
+      // Create individual reason elements
+      reasonsArray.forEach(reason => {
+        if (reason.trim()) { // Check if reason is not empty
+          const reasonElement = document.createElement('r');
+          reasonElement.className = 'reasons';
+          reasonElement.textContent = reason.trim();
+          resultsReasonsContainer.appendChild(reasonElement);
+        }
+      });
+    }
+  </script>
+
+</body>
+</html>
