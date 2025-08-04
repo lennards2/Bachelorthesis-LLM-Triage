@@ -8,16 +8,18 @@ load_dotenv()
 
 app = Flask(__name__)
 
+# Retrieve OpenAI API key from environment variables
+# This key is required for authenticating with OpenAI's Realtime API
 OPENAI_API_KEY = os.environ["KEY"]
 
 openai.api_key = OPENAI_API_KEY
 
-
+#Serve the main application page
 @app.route("/")
 def index():
     return render_template("index.html")
 
-
+#Create and return an ephemeral session token for OpenAI API
 @app.route("/session")
 def session():
     print("Sending request to OpenAI API...", flush=True)
@@ -31,7 +33,9 @@ def session():
         "voice": "verse"
     }
     response = requests.post(url, headers=headers, json=json_data)
+    # Return token to frontend
     return jsonify(response.json())
 
 if __name__ == "__main__":
     app.run(debug=True)
+
