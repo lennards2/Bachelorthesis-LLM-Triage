@@ -348,7 +348,7 @@ body {
 #sound-on {
   margin-left: 0px;
 }
-
+/* Loader from https://css-loaders.com/dots/  */
 .loader {
   width: 60px;
   aspect-ratio: 2;
