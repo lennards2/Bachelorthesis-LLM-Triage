@@ -195,6 +195,7 @@ body {
   margin-bottom: 70px;
 }
 
+/* Gradient box from https://css-tricks.com/gradient-borders-in-css/ */
 .gradient-box {
   display: flex;
   align-items: center;
