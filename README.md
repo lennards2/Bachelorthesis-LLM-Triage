@@ -18,7 +18,7 @@ This repository contains the code and documentation for my Bachelor thesis proje
 ├── templates/
 │   └── index.html        # Main application interface
 ├── README.md
-└── .env                  # Environment variables (create this)
+└── .env                  # Environment variables (OpenAI API Key, not included on GitHub)
 ```
 
 ## Prerequisites
